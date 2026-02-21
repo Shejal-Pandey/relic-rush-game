@@ -5,10 +5,17 @@
 Relic Rush is an immersive browser-based 3D endless runner inspired by games like Temple Run. What makes Relic Rush special is its **Dual-Device Architecture**: you play the game on your computer monitor while using your **smartphone as a wireless touch gamepad** in real-time!
 
 ## 🖥️ Desktop View
-*(Insert an image or GIF of the 3D Desktop Game running here)*
+
+<img width="1728" height="997" alt="Screenshot 2026-02-21 at 12 16 55 PM" src="https://github.com/user-attachments/assets/32635637-6bbe-4af1-8f75-a56e4f595626" />
+
+<img width="1728" height="1001" alt="Screenshot 2026-02-21 at 12 18 09 PM" src="https://github.com/user-attachments/assets/3fafc7ac-eca7-488a-966a-fd958ad18d9d" />
 
 ## 📱 Mobile View
-*(Insert an image or GIF of the Mobile Phone Controller screen here)*
+
+![photo_2026-02-21 12 22 43](https://github.com/user-attachments/assets/ccd26791-4402-4253-b2d1-fa00dd9f04ff)
+
+![photo_2026-02-21 12 22 45](https://github.com/user-attachments/assets/4591b6f7-ac72-41bd-8f86-ad2468d28f95)
+
 
 ## ✨ Features
 
