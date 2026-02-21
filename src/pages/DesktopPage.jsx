@@ -19,79 +19,9 @@ export default function DesktopPage() {
     const canvasRef = useRef(null)
     const lastCoinCount = useRef(0)
 
-    // Create session and show QR code
+    // Skip session entirely and show the start screen
     useEffect(() => {
-        async function initSession() {
-            try {
-                const res = await fetch('http://localhost:5002/api/session', { method: 'POST' })
-                const data = await res.json()
-                const { sessionId: sid, ip, port } = data
-                setSessionId(sid)
-                setQrUrl(`http://${ip}:${port}/controller?session=${sid}`)
-
-                // Connect socket
-                const socket = createSocket()
-                socketRef.current = socket
-
-                socket.on('connect', () => {
-                    socket.emit('join_session', { sessionId: sid, role: 'desktop' })
-                })
-
-                // When a player joins from mobile
-                socket.on('player_joined', (data) => {
-                    setPlayerName(data.name)
-                    setStage('game')
-                    // Automatically awake audio as game starts
-                    resumeAudioIfReady()
-                })
-
-                // Receive control events from mobile
-                socket.on('control', (data) => {
-                    if (gameRef.current) {
-                        const { direction } = data
-                        switch (direction) {
-                            case 'left': gameRef.current.moveLeft(); break
-                            case 'right': gameRef.current.moveRight(); break
-                            case 'up': gameRef.current.jump(); break
-                            case 'down': gameRef.current.slide(); break
-                        }
-                    }
-                })
-
-                // Phone explicitly hits START Game
-                socket.on('game_started', () => {
-                    resumeAudioIfReady()
-                })
-
-                // Phone ended the game
-                socket.on('game_ended', (data) => {
-                    if (gameRef.current) {
-                        gameRef.current.endGame()
-                    }
-                })
-
-                // Phone wants to play again
-                socket.on('restart_game', () => {
-                    if (gameRef.current) {
-                        gameRef.current.destroy()
-                        gameRef.current = null
-                    }
-                    setScore(0)
-                    setCoins(0)
-                    setStage('game') // Go directly to game, not QR
-                    // Awake audio for second run
-                    resumeAudioIfReady()
-                })
-
-                setStage('qr')
-            } catch (err) {
-                console.error('Failed to create session:', err)
-                // Still show QR with fallback
-                setStage('qr')
-            }
-        }
-
-        initSession()
+        setStage('qr')
 
         // 🔊 SILENT AUDIO UNLOCKER: Browsers require a user interaction to allow audio context start.
         // Instead of showing a button, we listen for the VERY FIRST click anywhere on the page, play a silent tone,
@@ -128,7 +58,6 @@ export default function DesktopPage() {
 
 
         return () => {
-            if (socketRef.current) socketRef.current.disconnect()
             if (gameRef.current) gameRef.current.destroy()
             stopBgMusic()
             window.removeEventListener('click', silentUnlock)
@@ -236,8 +165,8 @@ export default function DesktopPage() {
                             setIsSoundMuted(newMuteState)
                             if (!newMuteState) playClick()
                         }}
-                        className="bg-transparent hover:scale-105 active:scale-95 text-white rounded-full flex items-center justify-center cursor-pointer transition-transform border-[3px] border-white/50 overflow-hidden shadow-xl"
-                        style={{ outline: 'none', width: '56px', height: '56px' }}
+                        className="bg-transparent hover:scale-105 active:scale-95 text-white rounded-full flex items-center justify-center cursor-pointer transition-transform border-[4px] border-white/50 overflow-hidden shadow-2xl"
+                        style={{ outline: 'none', width: '80px', height: '80px' }}
                     >
                         {isSoundMuted ? (
                             <img src="/sound_off.png" alt="Sound Off" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -281,7 +210,7 @@ export default function DesktopPage() {
 
                             {stage === 'loading' ? (
                                 <div className="glass-card qr-section">
-                                    <p className="waiting-text">Creating game session...</p>
+                                    <p className="waiting-text">Loading...</p>
                                     <div className="loading-dots">
                                         <span /><span /><span />
                                     </div>
@@ -292,24 +221,21 @@ export default function DesktopPage() {
                                     initial={{ scale: 0.9, opacity: 0 }}
                                     animate={{ scale: 1, opacity: 1 }}
                                     transition={{ delay: 0.2 }}
+                                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '2rem' }}
                                 >
-                                    <p className="scan-text">
-                                        SCAN TO PLAY
-                                    </p>
-                                    <div className="qr-wrapper">
-                                        <QRCode
-                                            value={qrUrl || 'loading...'}
-                                            size={200}
-                                            bgColor="#ffffff"
-                                            fgColor="#0a0a1a"
-                                            level="M"
-                                        />
-                                    </div>
-                                    <p className="waiting-text">
-                                        Waiting for player to join
-                                        <span className="loading-dots" style={{ marginLeft: 6 }}>
-                                            <span /><span /><span />
-                                        </span>
+                                    <button
+                                        onClick={() => {
+                                            playClick()
+                                            resumeAudioIfReady()
+                                            setStage('game')
+                                        }}
+                                        className="bg-green-600 hover:bg-green-500 text-white font-black py-8 px-24 rounded-full shadow-2xl shadow-green-600/50 transition-all active:scale-95 border-[6px] border-green-400 tracking-widest uppercase text-5xl"
+                                        style={{ outline: 'none', margin: '1rem 0', zIndex: 10, position: 'relative' }}
+                                    >
+                                        START GAME
+                                    </button>
+                                    <p style={{ marginTop: '1rem', opacity: 0.8, fontSize: '1.2rem' }}>
+                                        Use ARROW KEYS to move!
                                     </p>
                                 </motion.div>
                             )}
@@ -377,7 +303,7 @@ export default function DesktopPage() {
                                             playClick()
                                             setTimeout(() => window.location.reload(), 200)
                                         }}
-                                        className="bg-red-600 hover:bg-red-500 text-white font-bold py-3 px-8 rounded-full shadow-lg shadow-red-600/50 transition-all active:scale-95 border-2 border-red-400 tracking-widest uppercase"
+                                        className="bg-red-600 hover:bg-red-500 text-white font-black py-6 px-16 rounded-full shadow-2xl shadow-red-600/50 transition-all active:scale-95 border-[4px] border-red-400 tracking-widest uppercase text-3xl"
                                         style={{ outline: 'none' }}
                                     >
                                         QUIT GAME

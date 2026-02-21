@@ -1,5 +1,8 @@
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js'
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js'
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import { playCollision, playGameOver, playParachuteWind, playLanding, startBgMusic, stopBgMusic, playFootstep, playBreathing } from '../sounds'
 
 /**
@@ -13,15 +16,15 @@ export default class RelicRushGame {
 
         // Constants
         this.LANE_W = 2.8
-        this.JUMP_FORCE = 14
-        this.GRAVITY = 36
+        this.JUMP_FORCE = 18
+        this.GRAVITY = 55
         this.PATH_LEN = 22
         this.TILE_N = 16
         this.OBS_N = 22
         this.COIN_N = 35
-        this.INIT_SPEED = 12
-        this.MAX_SPEED = 35
-        this.SPEED_INC = 0.25
+        this.INIT_SPEED = 22   // Massive speed boost at start
+        this.MAX_SPEED = 50    // Much higher top speed
+        this.SPEED_INC = 0.4   // Accelerate faster
 
         // State
         this.score = 0; this.coins = 0; this.speed = this.INIT_SPEED
@@ -41,9 +44,10 @@ export default class RelicRushGame {
         this.collisionPhase = 'none' // 'impact', 'falling', 'lying', 'none'
         this.collisionTimer = 0
 
-        // Footstep/Breathing timer
+        // Footstep/Breathing/Bob timer
         this.footstepTimer = 0
         this.breathTimer = 0
+        this.headBobT = 0
 
         // Pools
         this.tiles = []; this.lWalls = []; this.rWalls = []
@@ -76,6 +80,17 @@ export default class RelicRushGame {
         this.renderer.toneMapping = THREE.ACESFilmicToneMapping
         this.renderer.toneMappingExposure = 1.0
         this.container.appendChild(this.renderer.domElement)
+
+        // Post-Processing Pipeline
+        const renderScene = new RenderPass(this.scene, this.camera)
+        const bloomPass = new UnrealBloomPass(new THREE.Vector2(w, h), 1.5, 0.4, 0.85)
+        bloomPass.threshold = 0.5 // High threshold so only emissive/sky blows out
+        bloomPass.strength = 1.6  // Strong cinematic glare
+        bloomPass.radius = 0.5    // Wide bleed
+
+        this.composer = new EffectComposer(this.renderer)
+        this.composer.addPass(renderScene)
+        this.composer.addPass(bloomPass)
 
         this.buildLighting()
         this.buildWater()
@@ -128,6 +143,44 @@ export default class RelicRushGame {
         const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; return t
     }
 
+    generateNormalMap(canvasTexture) {
+        const c = document.createElement('canvas');
+        const w = canvasTexture.image.width;
+        const h = canvasTexture.image.height;
+        c.width = w; c.height = h;
+        const ctx = c.getContext('2d');
+        ctx.drawImage(canvasTexture.image, 0, 0);
+        const imgData = ctx.getImageData(0, 0, w, h);
+        const normalData = new ImageData(w, h);
+
+        // Simple Sobel-like edge detection to generate normals
+        for (let y = 0; y < h; y++) {
+            for (let x = 0; x < w; x++) {
+                const i = (y * w + x) * 4;
+                // Get brightness of neighbors
+                const l = x > 0 ? imgData.data[i - 4] : imgData.data[i];
+                const r = x < w - 1 ? imgData.data[i + 4] : imgData.data[i];
+                const t = y > 0 ? imgData.data[i - w * 4] : imgData.data[i];
+                const b = y < h - 1 ? imgData.data[i + w * 4] : imgData.data[i];
+
+                // Calculate slopes
+                const dx = (r - l) * 2.0;
+                const dy = (b - t) * 2.0;
+                const dz = 255.0; // Base strength
+
+                // Normalize vector
+                const len = Math.sqrt(dx * dx + dy * dy + dz * dz);
+                normalData.data[i] = (dx / len) * 127 + 128;     // R (X)
+                normalData.data[i + 1] = (dy / len) * 127 + 128; // G (Y)
+                normalData.data[i + 2] = (dz / len) * 127 + 128; // B (Z)
+                normalData.data[i + 3] = 255;                    // Alpha
+            }
+        }
+        const nc = document.createElement('canvas'); nc.width = w; nc.height = h;
+        nc.getContext('2d').putImageData(normalData, 0, 0);
+        const nt = new THREE.CanvasTexture(nc); nt.wrapS = nt.wrapT = THREE.RepeatWrapping; return nt;
+    }
+
     // === LIGHTING ===
     buildLighting() {
         this.scene.add(new THREE.AmbientLight(0xffeedd, 0.6))
@@ -178,8 +231,9 @@ export default class RelicRushGame {
     // === PATH (Detailed Temple Stone Floor) ===
     buildPath() {
         const tex = this.stoneTexture('#8a7a5a', '#706040'); tex.repeat.set(3, 6)
+        const nTex = this.generateNormalMap(tex); nTex.repeat.set(3, 6)
         const geo = new THREE.PlaneGeometry(10, this.PATH_LEN)
-        const mat = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.85, metalness: 0.05, color: 0xb09060 })
+        const mat = new THREE.MeshStandardMaterial({ map: tex, normalMap: nTex, normalScale: new THREE.Vector2(1.8, 1.8), roughness: 0.85, metalness: 0.05, color: 0xb09060 })
         // Raised stone border along edges
         const borderGeo = new THREE.BoxGeometry(0.6, 0.35, this.PATH_LEN)
         const borderMat = new THREE.MeshStandardMaterial({ color: 0x8a7a58, roughness: 0.9, metalness: 0.05 })
@@ -232,12 +286,15 @@ export default class RelicRushGame {
     // === WALLS (Layered Ancient Temple Walls) ===
     buildWalls() {
         const tex = this.stoneTexture('#6a5a4a', '#584838'); tex.repeat.set(2, 4)
+        const nTex = this.generateNormalMap(tex); nTex.repeat.set(2, 4)
         const mossTex = this.mossTexture(); mossTex.repeat.set(3, 6)
+        const nMossTex = this.generateNormalMap(mossTex); nMossTex.repeat.set(3, 6)
+
         const wGeo = new THREE.BoxGeometry(1.2, 4, this.PATH_LEN)
-        const wMat = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.9, metalness: 0.05, color: 0x8a7a60 })
+        const wMat = new THREE.MeshStandardMaterial({ map: tex, normalMap: nTex, normalScale: new THREE.Vector2(1.5, 1.5), roughness: 0.9, metalness: 0.05, color: 0x8a7a60 })
         // Moss overlay panels
         const mGeo = new THREE.PlaneGeometry(this.PATH_LEN, 1.5)
-        const mMat = new THREE.MeshStandardMaterial({ map: mossTex, transparent: true, opacity: 0.6, color: 0x3a6a2a, side: THREE.DoubleSide })
+        const mMat = new THREE.MeshStandardMaterial({ map: mossTex, normalMap: nMossTex, normalScale: new THREE.Vector2(2.0, 2.0), transparent: true, opacity: 0.6, color: 0x3a6a2a, side: THREE.DoubleSide })
         // Decorative gold tiles on walls
         const dGeo = new THREE.BoxGeometry(0.15, 0.5, 0.5)
         const dMat = new THREE.MeshStandardMaterial({ color: 0xc8a020, metalness: 0.8, roughness: 0.2, emissive: 0x886600, emissiveIntensity: 0.2 })
@@ -326,7 +383,10 @@ export default class RelicRushGame {
 
     // === ARCHWAYS (Grand Temple Gates) ===
     buildArchways() {
-        const sMat = new THREE.MeshStandardMaterial({ color: 0x7a6a50, roughness: 0.85, metalness: 0.1 })
+        const tex = this.stoneTexture('#7a6a50', '#5a4a30'); tex.repeat.set(1, 4)
+        const nTex = this.generateNormalMap(tex); nTex.repeat.set(1, 4)
+
+        const sMat = new THREE.MeshStandardMaterial({ map: tex, normalMap: nTex, normalScale: new THREE.Vector2(1.5, 1.5), color: 0x7a6a50, roughness: 0.85, metalness: 0.1 })
         const dMat = new THREE.MeshStandardMaterial({ color: 0xc8a020, metalness: 0.8, roughness: 0.2, emissive: 0x886600, emissiveIntensity: 0.15 })
         const carveMat = new THREE.MeshStandardMaterial({ color: 0x8a7a58, roughness: 0.75, metalness: 0.15 })
         for (let i = 0; i < 5; i++) {
@@ -376,8 +436,11 @@ export default class RelicRushGame {
 
     // === BUILDINGS (Ancient Temple Ruins & Stepped Pyramids) ===
     buildBuildings() {
-        const stoneMat = new THREE.MeshStandardMaterial({ color: 0x6a5a4a, roughness: 0.9 })
-        const darkMat = new THREE.MeshStandardMaterial({ color: 0x4a3a2a, roughness: 0.92 })
+        const tex = this.stoneTexture('#6a5a4a', '#4a3a2a'); tex.repeat.set(2, 2)
+        const nTex = this.generateNormalMap(tex); nTex.repeat.set(2, 2)
+
+        const stoneMat = new THREE.MeshStandardMaterial({ map: tex, normalMap: nTex, normalScale: new THREE.Vector2(1.2, 1.2), color: 0x6a5a4a, roughness: 0.9 })
+        const darkMat = new THREE.MeshStandardMaterial({ map: tex, normalMap: nTex, normalScale: new THREE.Vector2(1.2, 1.2), color: 0x4a3a2a, roughness: 0.92 })
         const roofMat = new THREE.MeshStandardMaterial({ color: 0x4a5a3a, roughness: 0.85 })
         const goldMat = new THREE.MeshStandardMaterial({ color: 0xc8a020, metalness: 0.7, roughness: 0.3, emissive: 0x886600, emissiveIntensity: 0.15 })
         const ivyMat = new THREE.MeshStandardMaterial({ color: 0x2a5a18, roughness: 0.85 })
@@ -879,17 +942,54 @@ export default class RelicRushGame {
         }
     }
 
-    // === PARTICLES ===
+    // === PARTICLES (Ambient & Footstep Dust) ===
     buildParticles() {
-        const n = 120, pos = new Float32Array(n * 3)
-        for (let i = 0; i < n; i++) {
-            pos[i * 3] = (Math.random() - 0.5) * 16
-            pos[i * 3 + 1] = 0.5 + Math.random() * 10
-            pos[i * 3 + 2] = (Math.random() - 0.5) * 100 - 30
+        // Floating Ember/Fireflies
+        const pGeo = new THREE.BufferGeometry()
+        const pMat = new THREE.PointsMaterial({ color: 0xffddaa, size: 0.25, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending, depthWrite: false })
+        const verts = []
+        for (let i = 0; i < 200; i++) verts.push((Math.random() - 0.5) * 16, Math.random() * 10, -Math.random() * 120)
+        pGeo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3))
+        this.particles = new THREE.Points(pGeo, pMat); this.scene.add(this.particles)
+
+        // Impact Dust (Footsteps & Landings)
+        const dGeo = new THREE.BufferGeometry()
+        const dMat = new THREE.PointsMaterial({ color: 0x8a7a5a, size: 0.4, transparent: true, opacity: 0.5, depthWrite: false })
+        const dVerts = new Float32Array(60 * 3) // 20 dust puffs * 3 coords
+        dGeo.setAttribute('position', new THREE.BufferAttribute(dVerts, 3))
+        this.dustParticles = new THREE.Points(dGeo, dMat)
+        this.dustData = [] // Stores lifetime and velocity for dust puffs
+        for (let i = 0; i < 20; i++) {
+            this.dustData.push({ active: false, x: 0, y: -99, z: 0, vx: 0, vy: 0, vz: 0, life: 0 })
         }
-        const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3))
-        const m = new THREE.PointsMaterial({ color: 0x88ffaa, size: 0.06, transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending, depthWrite: false })
-        this.particles = new THREE.Points(g, m); this.scene.add(this.particles)
+        this.scene.add(this.dustParticles)
+
+        // Hyperspeed Wind Streaks (Active only at high speed)
+        const wGeo = new THREE.BufferGeometry()
+        const wMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.0, blending: THREE.AdditiveBlending })
+        const wVerts = []
+        for (let i = 0; i < 60; i++) { // 30 lines
+            const x = (Math.random() - 0.5) * 15
+            const y = 1 + Math.random() * 8
+            const z = -10 - Math.random() * 40
+            wVerts.push(x, y, z); wVerts.push(x, y, z - 8) // Line segment
+        }
+        wGeo.setAttribute('position', new THREE.Float32BufferAttribute(wVerts, 3))
+        this.windStreaks = new THREE.LineSegments(wGeo, wMat)
+        this.scene.add(this.windStreaks)
+    }
+
+    spawnDust(x, z, amount = 3, intensity = 1.0) {
+        let spawned = 0
+        for (let i = 0; i < this.dustData.length && spawned < amount; i++) {
+            const p = this.dustData[i]
+            if (!p.active) {
+                p.active = true; p.life = 1.0;
+                p.x = x + (Math.random() - 0.5) * 0.5; p.y = 0.1; p.z = z + (Math.random() - 0.5) * 0.5
+                p.vx = (Math.random() - 0.5) * 3 * intensity; p.vy = (0.5 + Math.random()) * 2 * intensity; p.vz = (Math.random() - 0.5) * 3 * intensity
+                spawned++
+            }
+        }
     }
 
     // === PARACHUTE ===
@@ -962,8 +1062,8 @@ export default class RelicRushGame {
         // Handle parachute intro
         if (this.introPhase === 'parachute') {
             this.introTimer += dt
-            // Descend from sky
-            this.playerY = Math.max(0, 25 - this.introTimer * 10)
+            // Descend from sky much faster (1 second to drop 25 units)
+            this.playerY = Math.max(0, 25 - this.introTimer * 25)
             this.player.position.y = this.playerY
             this.player.position.x = Math.sin(this.introTimer * 1.5) * 0.5
             // Sway parachute
@@ -980,7 +1080,7 @@ export default class RelicRushGame {
             }
             // Update mixer during intro
             if (this.mixer) this.mixer.update(dt)
-            this.renderer.render(this.scene, this.camera)
+            this.composer.render()
             return
         }
         if (this.introPhase === 'landing') {
@@ -1000,7 +1100,7 @@ export default class RelicRushGame {
             }
             // Update mixer during landing
             if (this.mixer) this.mixer.update(dt)
-            this.renderer.render(this.scene, this.camera)
+            this.composer.render()
             return
         }
 
@@ -1040,7 +1140,7 @@ export default class RelicRushGame {
                 }
             }
             if (this.mixer) this.mixer.update(dt)
-            this.renderer.render(this.scene, this.camera)
+            this.composer.render()
             return
         }
 
@@ -1069,7 +1169,8 @@ export default class RelicRushGame {
         if (this.playerModelLoaded && this.mixer) {
             // Sync animation speed with game speed for natural feel
             const speedRatio = this.speed / this.INIT_SPEED
-            const animSpeed = Math.max(0.8, Math.min(speedRatio * 0.85, 2.2))
+            // Higher cap to allow frantic sprinting at top speed
+            const animSpeed = Math.max(0.8, Math.min(speedRatio * 1.05, 3.5))
             if (this.currentAction) {
                 this.currentAction.setEffectiveTimeScale(animSpeed)
             }
@@ -1117,9 +1218,32 @@ export default class RelicRushGame {
         const laneOffset = this.tgtLane * this.LANE_W - this.player.position.x
         this.player.rotation.z += (laneOffset * -0.12 - this.player.rotation.z) * 8 * dt
 
-        // Camera smooth follow
+        // Camera smooth follow, Dynamic FOV, and Head-Bob
         const camTargetY = 6.5 + this.playerY * 0.3
         this.camera.position.y += (camTargetY - this.camera.position.y) * 4 * dt
+
+        // Intense Head-Bob mathematically tied to speed
+        const speedRatio = (this.speed - this.INIT_SPEED) / (this.MAX_SPEED - this.INIT_SPEED)
+        if (!this.jumping && !this.sliding) {
+            this.headBobT += dt * (this.speed * 0.25) // Reduced bob speed
+            // Reduced amplitude for a smoother ride
+            const bobY = Math.abs(Math.sin(this.headBobT)) * 0.05 * (1 + speedRatio)
+            const bobX = Math.cos(this.headBobT * 0.5) * 0.02 * (1 + speedRatio)
+            this.camera.position.y += bobY
+            this.camera.rotation.z = bobX
+            this.camera.rotation.x = -0.1 + (bobY * 0.5) // Slight pitch with step
+        } else {
+            // Smoothly reset camera rotation in air/slide
+            this.camera.rotation.z += (0 - this.camera.rotation.z) * 5 * dt
+            this.camera.rotation.x += (-0.1 - this.camera.rotation.x) * 5 * dt
+        }
+
+        // FOV warp effect: ranges from 68 (base) to 85 (max speed)
+        const targetFov = 68 + (17 * Math.max(0, Math.min(1, speedRatio)))
+        if (Math.abs(this.camera.fov - targetFov) > 0.1) {
+            this.camera.fov += (targetFov - this.camera.fov) * 2 * dt
+            this.camera.updateProjectionMatrix()
+        }
 
         // Move world
         if (this.startLine) { this.startLine.position.z += mv }
@@ -1132,11 +1256,10 @@ export default class RelicRushGame {
         for (const v of this.vines) { v.position.z += mv; v.children.forEach((c, i2) => { c.rotation.z = Math.sin(Date.now() * 0.002 + i2) * 0.05 }); if (v.position.z > 15) v.position.z -= 280 }
         for (const t of this.trees) { t.position.z += mv; if (t.position.z > 20) { t.position.z -= 256; t.position.x = (t.position.x > 0 ? 1 : -1) * (30 + Math.random() * 10) } }
 
-        // Particles
+        // Particles (Optimized out per-vertex CPU calculations)
         if (this.particles) {
-            const p = this.particles.geometry.attributes.position.array
-            for (let i = 0; i < p.length; i += 3) { p[i + 2] += mv; p[i + 1] += dt * 0.2; if (p[i + 2] > 12) { p[i + 2] -= 120; p[i + 1] = 0.5 + Math.random() * 10; p[i] = (Math.random() - 0.5) * 16 } }
-            this.particles.geometry.attributes.position.needsUpdate = true
+            this.particles.position.z += mv * 0.5 // Just move the whole group
+            if (this.particles.position.z > 50) this.particles.position.z -= 150
         }
 
         // Obstacles
@@ -1169,11 +1292,50 @@ export default class RelicRushGame {
             if (pu.position.z > 8) { pu.position.z = -(100 + Math.random() * 60); pu.position.x = (Math.floor(Math.random() * 3) - 1) * this.LANE_W; pu.userData.active = true; pu.visible = true }
         }
 
-        // Footstep sounds
+        // Update Dust Particles
+        const dPositions = this.dustParticles.geometry.attributes.position.array
+        for (let i = 0; i < this.dustData.length; i++) {
+            const p = this.dustData[i]
+            if (p.active) {
+                p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt + mv // Move with world
+                p.vy -= 5 * dt // Gravity on dust
+                p.life -= 1.5 * dt
+                if (p.life <= 0 || p.y < 0) { p.active = false; p.y = -99 }
+
+                dPositions[i * 3] = p.x; dPositions[i * 3 + 1] = p.y; dPositions[i * 3 + 2] = p.z
+            }
+        }
+        this.dustParticles.geometry.attributes.position.needsUpdate = true
+
+        // Hyperspeed Wind Streaks logic
+        if (this.windStreaks) {
+            const windSpeedRatio = Math.max(0, (this.speed - this.INIT_SPEED) / (this.MAX_SPEED - this.INIT_SPEED))
+            // Fade in as speed increases past 30% threshold
+            if (windSpeedRatio > 0.3) {
+                this.windStreaks.material.opacity = (windSpeedRatio - 0.3) * 0.8
+                this.windStreaks.scale.z = 1.0 + (windSpeedRatio * 3.0) // Stretch lines incredibly long
+            } else {
+                this.windStreaks.material.opacity = 0
+            }
+            // Move streaks past camera very quickly
+            const wPos = this.windStreaks.geometry.attributes.position.array
+            for (let i = 0; i < wPos.length; i += 6) {
+                wPos[i + 2] += (mv * 3) + (100 * dt * windSpeedRatio) // Front point
+                wPos[i + 5] += (mv * 3) + (100 * dt * windSpeedRatio) // Back point
+                if (wPos[i + 2] > 15) {
+                    const offset = -60 - Math.random() * 40
+                    wPos[i + 2] = offset; wPos[i + 5] = offset - 8 - (Math.random() * 10)
+                }
+            }
+            this.windStreaks.geometry.attributes.position.needsUpdate = true
+        }
+
+        // Footstep sounds & dust emission
         this.footstepTimer += dt
         if (this.footstepTimer > 0.3 && !this.jumping && !this.sliding) {
             this.footstepTimer = 0
             playFootstep()
+            this.spawnDust(this.player.position.x, this.player.position.z, 2, 0.8)
         }
 
         // Breathing sound
@@ -1215,13 +1377,13 @@ export default class RelicRushGame {
         this.update(dt)
         // Only render in update during intro/collision phases, otherwise render here
         if (this.introPhase === 'none' && this.collisionPhase === 'none') {
-            this.renderer.render(this.scene, this.camera)
+            this.composer.render()
         }
     }
 
     onResize() {
         const w = this.container.clientWidth, h = this.container.clientHeight
-        this.camera.aspect = w / h; this.camera.updateProjectionMatrix(); this.renderer.setSize(w, h)
+        this.camera.aspect = w / h; this.camera.updateProjectionMatrix(); this.renderer.setSize(w, h); this.composer.setSize(w, h)
     }
 
     destroy() {
@@ -1230,6 +1392,10 @@ export default class RelicRushGame {
         this.scene.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) { if (Array.isArray(o.material)) o.material.forEach(m => m.dispose()); else o.material.dispose() } })
         this.renderer.dispose()
         if (this.container.contains(this.renderer.domElement)) this.container.removeChild(this.renderer.domElement)
+        if (this.composer) this.composer.dispose()
         this.tiles = []; this.obs = []; this.coinArr = []; this.lWalls = []; this.rWalls = []; this.pups = []; this.trees = []; this.archways = []; this.buildings = []; this.vines = []; this.waterTiles = []
+        if (this.particles) { this.scene.remove(this.particles); this.particles.geometry.dispose(); this.particles.material.dispose() }
+        if (this.dustParticles) { this.scene.remove(this.dustParticles); this.dustParticles.geometry.dispose(); this.dustParticles.material.dispose() }
+        if (this.windStreaks) { this.scene.remove(this.windStreaks); this.windStreaks.geometry.dispose(); this.windStreaks.material.dispose() }
     }
 }
