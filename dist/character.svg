@@ -1,0 +1,157 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 400" width="200" height="400">
+  <!-- Adventurer Character - Relic Rush -->
+  
+  <!-- Shadow on ground -->
+  <ellipse cx="100" cy="390" rx="40" ry="8" fill="#c4a870" opacity="0.4"/>
+  
+  <!-- LEFT BOOT -->
+  <path d="M70 355 L70 380 L60 382 L58 388 L85 388 L85 355 Z" fill="#5a3d20" stroke="#3d2a15" stroke-width="1"/>
+  <path d="M62 378 L62 382 L58 384 L58 388 L85 388 L85 378 Z" fill="#4a3018"/>
+  <!-- Boot laces -->
+  <line x1="72" y1="360" x2="83" y2="360" stroke="#3d2a15" stroke-width="1"/>
+  <line x1="72" y1="365" x2="83" y2="365" stroke="#3d2a15" stroke-width="1"/>
+  <line x1="72" y1="370" x2="83" y2="370" stroke="#3d2a15" stroke-width="1"/>
+  
+  <!-- RIGHT BOOT -->
+  <path d="M115 355 L115 380 L125 382 L127 388 L100 388 L100 355 Z" fill="#5a3d20" stroke="#3d2a15" stroke-width="1"/>
+  <path d="M123 378 L123 382 L127 384 L127 388 L100 388 L100 378 Z" fill="#4a3018"/>
+  <!-- Boot laces -->
+  <line x1="102" y1="360" x2="113" y2="360" stroke="#3d2a15" stroke-width="1"/>
+  <line x1="102" y1="365" x2="113" y2="365" stroke="#3d2a15" stroke-width="1"/>
+  <line x1="102" y1="370" x2="113" y2="370" stroke="#3d2a15" stroke-width="1"/>
+  
+  <!-- LEFT LEG (cargo pants) -->
+  <path d="M72 240 L68 355 L88 355 L90 240 Z" fill="#8a7a50" stroke="#6a5a38" stroke-width="0.5"/>
+  <!-- Knee patch -->
+  <rect x="70" y="295" width="16" height="20" rx="3" fill="#7a6a42" opacity="0.6"/>
+  <!-- Cargo pocket left -->
+  <rect x="69" y="270" width="14" height="18" rx="2" fill="#7a6a42" stroke="#6a5a38" stroke-width="0.8"/>
+  <rect x="73" y="272" width="6" height="3" rx="1" fill="#6a5a38"/>
+  
+  <!-- RIGHT LEG (cargo pants) -->
+  <path d="M95 240 L97 355 L117 355 L113 240 Z" fill="#8a7a50" stroke="#6a5a38" stroke-width="0.5"/>
+  <!-- Knee patch -->
+  <rect x="99" y="295" width="16" height="20" rx="3" fill="#7a6a42" opacity="0.6"/>
+  <!-- Cargo pocket right -->
+  <rect x="102" y="270" width="14" height="18" rx="2" fill="#7a6a42" stroke="#6a5a38" stroke-width="0.8"/>
+  <rect x="106" y="272" width="6" height="3" rx="1" fill="#6a5a38"/>
+  
+  <!-- UTILITY BELT -->
+  <rect x="65" y="232" width="55" height="12" rx="2" fill="#5a3d20" stroke="#3d2a15" stroke-width="1"/>
+  <!-- Belt buckle -->
+  <rect x="87" y="233" width="12" height="10" rx="1" fill="#c8a830" stroke="#a08020" stroke-width="0.5"/>
+  <rect x="90" y="235" width="6" height="6" rx="1" fill="#a08020"/>
+  <!-- Belt pouches -->
+  <rect x="67" y="238" width="10" height="14" rx="2" fill="#5a3d20" stroke="#3d2a15" stroke-width="0.8"/>
+  <rect x="108" y="238" width="10" height="14" rx="2" fill="#5a3d20" stroke="#3d2a15" stroke-width="0.8"/>
+  <!-- Rope coil on belt -->
+  <circle cx="120" cy="255" r="6" fill="none" stroke="#b8a060" stroke-width="2.5"/>
+  <circle cx="120" cy="255" r="3.5" fill="none" stroke="#b8a060" stroke-width="2"/>
+  
+  <!-- TORSO (cream shirt) -->
+  <path d="M68 145 L65 235 L120 235 L117 145 Z" fill="#d4c8a0" stroke="#b8aa80" stroke-width="0.5"/>
+  <!-- Shirt buttons -->
+  <circle cx="92" cy="160" r="2" fill="#b8aa80"/>
+  <circle cx="92" cy="175" r="2" fill="#b8aa80"/>
+  <circle cx="92" cy="190" r="2" fill="#b8aa80"/>
+  <circle cx="92" cy="205" r="2" fill="#b8aa80"/>
+  <!-- Shirt collar -->
+  <path d="M80 140 L92 155 L104 140" fill="none" stroke="#b8aa80" stroke-width="1.5"/>
+  <!-- Shirt pocket -->
+  <rect x="78" y="160" width="10" height="12" rx="1" fill="none" stroke="#b8aa80" stroke-width="0.8"/>
+  <!-- Shirt wrinkle lines -->
+  <path d="M75 180 Q85 183 80 200" fill="none" stroke="#c4b890" stroke-width="0.5" opacity="0.5"/>
+  <path d="M108 175 Q100 180 105 195" fill="none" stroke="#c4b890" stroke-width="0.5" opacity="0.5"/>
+  
+  <!-- BACKPACK (visible behind) -->
+  <path d="M110 130 L125 140 L128 220 L112 225 Z" fill="#4a3520" stroke="#3d2a15" stroke-width="1"/>
+  <!-- Backpack straps -->
+  <path d="M110 135 L105 145 L105 220 L108 225" fill="none" stroke="#5a3d20" stroke-width="3"/>
+  <path d="M115 135 L118 145 L118 180" fill="none" stroke="#5a3d20" stroke-width="3"/>
+  <!-- Rolled mat on backpack -->
+  <ellipse cx="122" cy="132" rx="8" ry="5" fill="#6a7a50" stroke="#5a6a40" stroke-width="1"/>
+  <line x1="114" y1="132" x2="130" y2="132" stroke="#5a6a40" stroke-width="0.5"/>
+  <!-- Backpack buckles -->
+  <rect x="120" y="160" width="5" height="4" rx="1" fill="#c8a830"/>
+  <rect x="120" y="190" width="5" height="4" rx="1" fill="#c8a830"/>
+  
+  <!-- LEFT ARM -->
+  <!-- Upper arm (shirt sleeve) -->
+  <path d="M68 145 L52 155 L48 195 L65 195 Z" fill="#d4c8a0" stroke="#b8aa80" stroke-width="0.5"/>
+  <!-- Forearm (skin) -->
+  <path d="M48 195 L45 230 L62 232 L65 195 Z" fill="#c4a070"/>
+  <!-- Wristband -->
+  <rect x="44" y="228" width="18" height="8" rx="2" fill="#5a3d20" stroke="#3d2a15" stroke-width="0.8"/>
+  <!-- Glove -->
+  <path d="M44 236 L42 252 L60 252 L62 236 Z" fill="#4a3520" stroke="#3d2a15" stroke-width="0.5"/>
+  <!-- Fingers -->
+  <path d="M43 252 L42 258 L48 258 L48 252" fill="#4a3520"/>
+  <path d="M48 252 L48 260 L54 260 L54 252" fill="#4a3520"/>
+  <path d="M54 252 L55 258 L60 258 L60 252" fill="#4a3520"/>
+  
+  <!-- RIGHT ARM -->
+  <!-- Upper arm (shirt sleeve) -->
+  <path d="M117 145 L133 155 L137 195 L120 195 Z" fill="#d4c8a0" stroke="#b8aa80" stroke-width="0.5"/>
+  <!-- Forearm (skin) -->
+  <path d="M137 195 L140 230 L123 232 L120 195 Z" fill="#c4a070"/>
+  <!-- Wristband -->
+  <rect x="122" y="228" width="18" height="8" rx="2" fill="#5a3d20" stroke="#3d2a15" stroke-width="0.8"/>
+  <!-- Glove -->
+  <path d="M122 236 L120 252 L138 252 L140 236 Z" fill="#4a3520" stroke="#3d2a15" stroke-width="0.5"/>
+  <!-- Fingers -->
+  <path d="M121 252 L120 258 L126 258 L126 252" fill="#4a3520"/>
+  <path d="M126 252 L126 260 L132 260 L132 252" fill="#4a3520"/>
+  <path d="M132 252 L133 258 L139 258 L139 252" fill="#4a3520"/>
+  
+  <!-- SCARF/NECK WRAP -->
+  <path d="M78 130 L75 148 L110 148 L107 130 Z" fill="#6a7a3a" opacity="0.85"/>
+  <path d="M80 132 L78 140 L84 145 L82 138 Z" fill="#5a6a2a" opacity="0.6"/>
+  <path d="M100 132 L103 142 L108 140 L105 134 Z" fill="#5a6a2a" opacity="0.6"/>
+  
+  <!-- NECK -->
+  <rect x="83" y="118" width="18" height="18" rx="3" fill="#c4a070"/>
+  
+  <!-- HEAD -->
+  <ellipse cx="92" cy="90" rx="28" ry="32" fill="#c4a070"/>
+  <!-- Face shadow -->
+  <ellipse cx="92" cy="95" rx="24" ry="26" fill="#caa878" opacity="0.3"/>
+  
+  <!-- HAIR -->
+  <path d="M64 75 Q65 48 92 42 Q119 48 120 75 L118 68 Q115 55 92 50 Q69 55 66 68 Z" fill="#8a5a2a"/>
+  <!-- Hair detail strands -->
+  <path d="M70 65 Q75 50 85 48" fill="none" stroke="#7a4a1a" stroke-width="1.5"/>
+  <path d="M78 60 Q85 46 95 45" fill="none" stroke="#7a4a1a" stroke-width="1"/>
+  <path d="M95 45 Q105 47 112 58" fill="none" stroke="#7a4a1a" stroke-width="1.5"/>
+  <!-- Side hair -->
+  <path d="M64 75 L62 85 L65 82 Z" fill="#8a5a2a"/>
+  <path d="M120 75 L122 85 L119 82 Z" fill="#8a5a2a"/>
+  <!-- Messy top spikes -->
+  <path d="M80 50 L78 42 L84 47 Z" fill="#8a5a2a"/>
+  <path d="M88 46 L90 38 L94 44 Z" fill="#8a5a2a"/>
+  <path d="M98 47 L102 40 L104 48 Z" fill="#8a5a2a"/>
+  <path d="M108 52 L113 44 L112 54 Z" fill="#8a5a2a"/>
+  
+  <!-- EYES -->
+  <!-- Left eye -->
+  <ellipse cx="82" cy="88" rx="5" ry="3.5" fill="white"/>
+  <circle cx="83" cy="88" r="2.5" fill="#3a5a2a"/>
+  <circle cx="83.5" cy="87.5" r="1.2" fill="#1a2a0a"/>
+  <circle cx="84.5" cy="86.5" r="0.5" fill="white"/>
+  <!-- Right eye -->
+  <ellipse cx="102" cy="88" rx="5" ry="3.5" fill="white"/>
+  <circle cx="101" cy="88" r="2.5" fill="#3a5a2a"/>
+  <circle cx="100.5" cy="87.5" r="1.2" fill="#1a2a0a"/>
+  <circle cx="99.5" cy="86.5" r="0.5" fill="white"/>
+  <!-- Eyebrows -->
+  <path d="M76 82 Q82 78 88 81" fill="none" stroke="#6a3a1a" stroke-width="2" stroke-linecap="round"/>
+  <path d="M96 81 Q102 78 108 82" fill="none" stroke="#6a3a1a" stroke-width="2" stroke-linecap="round"/>
+  
+  <!-- NOSE -->
+  <path d="M92 90 L89 100 L92 101 L95 100 Z" fill="#b8905a" opacity="0.5"/>
+  
+  <!-- MOUTH -->
+  <path d="M84 107 Q92 112 100 107" fill="none" stroke="#8a6040" stroke-width="1.5" stroke-linecap="round"/>
+  
+  <!-- JAW LINE -->
+  <path d="M65 95 Q68 120 92 125 Q116 120 119 95" fill="none" stroke="#b8905a" stroke-width="0.5" opacity="0.3"/>
+</svg>
